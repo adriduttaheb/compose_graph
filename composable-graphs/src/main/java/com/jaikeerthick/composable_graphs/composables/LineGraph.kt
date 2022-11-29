@@ -13,10 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jaikeerthick.composable_graphs.data.GraphData
+import com.jaikeerthick.composable_graphs.helper.DataInterpolationHelper
 import com.jaikeerthick.composable_graphs.helper.GraphHelper
 import com.jaikeerthick.composable_graphs.style.LineGraphStyle
 import kotlin.math.pow
@@ -26,7 +28,7 @@ import kotlin.math.sqrt
 @Composable
 fun LineGraph(
     xAxisData: List<GraphData>,
-    yAxisData: List<Number>,
+    yAxisData: List<Number?>,
     header: @Composable() () -> Unit = {},
     style: LineGraphStyle = LineGraphStyle(),
     onPointClicked: (pair: Pair<Any, Any>) -> Unit = {},
@@ -91,7 +93,7 @@ fun LineGraph(
 
                             //
                             val index = offsetList.indexOf(it)
-                            onPointClicked(Pair(xAxisData[index].text, yAxisData[index]))
+                            onPointClicked(Pair(xAxisData[index].text, yAxisData[index] ?: 0))
                         }
 
                     }
@@ -201,41 +203,54 @@ fun LineGraph(
              */
 
             offsetList.clear() // clearing list to avoid data duplication during recomposition
-
+            val interpolatedData = DataInterpolationHelper.getInterpolatedData(yAxisData)
             for (i in 0 until maxPointsSize) {
+                val yAxisPoint = interpolatedData[i]
 
-                val x1 = xItemSpacing * i
-                val y1 =
-                    gridHeight - (yItemSpacing * (yAxisData[i].toFloat() / verticalStep.toFloat()))
+                if(yAxisPoint is DataInterpolationHelper.PlotInfo.Regular ||
+                    yAxisPoint is DataInterpolationHelper.PlotInfo.Interpolated) {
 
-                offsetList.add(
-                    Offset(
-                        x = x1,
-                        y = y1
+                    val pointValue = when(yAxisPoint) {
+                        is DataInterpolationHelper.PlotInfo.Regular -> yAxisPoint.value
+                        is DataInterpolationHelper.PlotInfo.Interpolated -> yAxisPoint.value
+                        else -> throw IllegalStateException("Illegal state when getting plot point")
+                    }
+
+                    val x1 = xItemSpacing * i
+                    val y1 =
+                        gridHeight - (yItemSpacing * (pointValue.toFloat() / verticalStep))
+
+                    offsetList.add(
+                        Offset(
+                            x = x1,
+                            y = y1
+                        )
                     )
-                )
 
-                drawCircle(
-                    color = style.colors.pointColor,
-                    radius = 5.dp.toPx(),
-                    center = Offset(x1, y1)
-                )
-                /**
-                 * Draws point value above the point
-                 */
-                if (isPointValuesVisible) {
-                    val pointTextSize = 12.sp.toPx()
-                    val formattedValue = String.format("%02d", yAxisData[i])
-                    drawContext.canvas.nativeCanvas.drawText(
-                        formattedValue,
-                        x1, // x
-                        y1 - pointTextSize, // y
-                        Paint().apply {
-                            color = android.graphics.Color.GRAY
-                            textAlign = Paint.Align.CENTER
-                            textSize = pointTextSize
-                        }
+                    drawCircle(
+                        color = if(yAxisPoint is DataInterpolationHelper.PlotInfo.Regular)style.colors.pointColor
+                        else Color.Transparent,
+                        radius = 5.dp.toPx(),
+                        center = Offset(x1, y1)
                     )
+
+                    /**
+                     * Draws point value above the point
+                     */
+                    if (isPointValuesVisible) {
+                        val pointTextSize = 12.sp.toPx()
+                        val formattedValue = String.format("%02d", yAxisData[i])
+                        drawContext.canvas.nativeCanvas.drawText(
+                            formattedValue,
+                            x1, // x
+                            y1 - pointTextSize, // y
+                            Paint().apply {
+                                color = android.graphics.Color.GRAY
+                                textAlign = Paint.Align.CENTER
+                                textSize = pointTextSize
+                            }
+                        )
+                    }
                 }
             }
 
@@ -252,7 +267,7 @@ fun LineGraph(
                     y = gridHeight
                 )
 
-                for (i in 0 until maxPointsSize) {
+                for (i in 0 until offsetList.size) {
                     lineTo(offsetList[i].x, offsetList[i].y)
                 }
 
@@ -278,7 +293,7 @@ fun LineGraph(
             drawPoints(
                 points = offsetList.subList(
                     fromIndex = 0,
-                    toIndex = maxPointsSize
+                    toIndex = offsetList.size
                 ),
                 color = style.colors.lineColor,
                 pointMode = PointMode.Polygon,
@@ -309,8 +324,17 @@ fun LineGraph(
 
         }
     }
+}
 
-
+@Preview(showBackground = true)
+@Composable
+fun LineGraphPreview() {
+    LineGraph(
+        xAxisData = listOf("Sun", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat").map {
+            GraphData.String(it)
+        }, // xAxisData : List<GraphData>, and GraphData accepts both Number and String types
+        yAxisData = listOf(20,null, null, null, null, null, 1),
+    )
 }
 
 

@@ -4,9 +4,9 @@ import kotlin.math.roundToInt
 
 object GraphHelper {
 
-    fun getAbsoluteMax(list: List<Number>): Number{
+    fun getAbsoluteMax(list: List<Number?>): Number{
         return list.maxByOrNull {
-            it.toFloat().roundToInt()
+            it?.toFloat()?.roundToInt() ?: 0
         } ?: 0
     }
 
