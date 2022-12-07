@@ -26,3 +26,9 @@ data class LinearGraphVisibility(
 
     val isHeaderVisible: Boolean = false,
 )
+
+data class YValueRange(
+    val minimumValue: Int,
+    val maximumValue: Int,
+    val yInterval: Int
+)

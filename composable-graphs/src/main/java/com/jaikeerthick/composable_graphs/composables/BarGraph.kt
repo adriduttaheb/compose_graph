@@ -97,7 +97,7 @@ fun BarGraph(
             val maxPointsSize = dataList.size + 1
 
             // maximum of the data list
-            val absMaxY = GraphHelper.getAbsoluteMax(dataList)
+            val absMaxY = GraphHelper.getAbsoluteMax(dataList, null)
             val absMinY = 0
             println("max - $absMaxY, Min - $absMinY")
 

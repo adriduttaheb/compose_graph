@@ -5,13 +5,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -21,6 +19,8 @@ import com.jaikeerthick.composable_graphs.data.GraphData
 import com.jaikeerthick.composable_graphs.helper.DataInterpolationHelper
 import com.jaikeerthick.composable_graphs.helper.GraphHelper
 import com.jaikeerthick.composable_graphs.style.LineGraphStyle
+import com.jaikeerthick.composable_graphs.style.LinearGraphVisibility
+import com.jaikeerthick.composable_graphs.style.YValueRange
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -33,6 +33,7 @@ fun LineGraph(
     style: LineGraphStyle = LineGraphStyle(),
     onPointClicked: (pair: Pair<Any, Any>) -> Unit = {},
     isPointValuesVisible: Boolean = false,
+    yValueRange: YValueRange? = null
 ) {
 
     val paddingRight: Dp = if (style.visibility.isYAxisLabelVisible) 20.dp else 0.dp
@@ -116,20 +117,33 @@ fun LineGraph(
             val maxPointsSize: Int = minOf(xAxisData.size, yAxisData.size)
 
             // maximum of the y data list
-            val absMaxY = GraphHelper.getAbsoluteMax(yAxisData)
-            val absMinY = 0
+            val absMaxY = GraphHelper.getAbsoluteMax(yAxisData, yValueRange?.maximumValue)
 
-            val verticalStep = absMaxY.toInt() / maxPointsSize.toFloat()
+            val verticalStep = if(yValueRange?.yInterval == null ) {
+                (absMaxY.toInt() / maxPointsSize.toFloat()).toInt()
+            }
+            else {
+                yValueRange.yInterval
+            }
+
 
             // generate y axis label
             val yAxisLabelList = mutableListOf<String>()
 
-            for (i in 0..maxPointsSize) {
-                val intervalValue = (verticalStep * i).roundToInt()
-                println("interval - $intervalValue")
-                yAxisLabelList.add(intervalValue.toString())
+            if(yValueRange == null) {
+                for (i in 0..maxPointsSize) {
+                    val intervalValue = (verticalStep * i)
+                    println("interval - $intervalValue")
+                    yAxisLabelList.add(intervalValue.toString())
+                }
             }
-
+            else {
+                var yAxisLabel = yValueRange.minimumValue
+                while(yAxisLabel <= yValueRange.maximumValue) {
+                    yAxisLabelList.add(yAxisLabel.toString())
+                    yAxisLabel += yValueRange.yInterval
+                }
+            }
 
             val xItemSpacing = gridWidth / (maxPointsSize - 1)
             val yItemSpacing = gridHeight / (yAxisLabelList.size - 1)
@@ -217,8 +231,14 @@ fun LineGraph(
                     }
 
                     val x1 = xItemSpacing * i
-                    val y1 =
+                    val y1 = if(yValueRange == null) {
                         gridHeight - (yItemSpacing * (pointValue.toFloat() / verticalStep))
+                    }
+                    else {
+                        val offset = (pointValue.toFloat() - yValueRange.minimumValue)
+                        gridHeight - (yItemSpacing * (offset / yValueRange.yInterval))
+                    }
+
 
                     offsetList.add(
                         Offset(
@@ -329,11 +349,21 @@ fun LineGraph(
 @Preview(showBackground = true)
 @Composable
 fun LineGraphPreview() {
+    val style = LineGraphStyle(
+        visibility = LinearGraphVisibility(
+            isYAxisLabelVisible = true,
+            isGridVisible = true
+        )
+    )
+
+
     LineGraph(
         xAxisData = listOf("Sun", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat").map {
             GraphData.String(it)
         }, // xAxisData : List<GraphData>, and GraphData accepts both Number and String types
-        yAxisData = listOf(20,null, null, null, null, null, 1),
+        yAxisData = listOf(3,6, 9, 12, 15, 18, 21),
+        style = style,
+        yValueRange = YValueRange(3, 24, 3)
     )
 }
 
