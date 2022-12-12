@@ -6,7 +6,8 @@ import androidx.compose.ui.graphics.Color
 data class LinearGraphColors(
     val backgroundColor: Color = Color.Transparent,
     val lineColor: Color = GraphAccent,
-    val pointColor: Color = GraphAccent,
+    val lowerThreshHoldPointColor: Color = GraphAccent,
+    val aboveThreshHoldPointColor: Color = GraphAccent,
     val clickHighlightColor: Color = PointHighlight,
     val crossHairColor: Color = Color.LightGray,
     /**

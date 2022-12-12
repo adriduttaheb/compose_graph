@@ -9,20 +9,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jaikeerthick.composable_graphs.color.LinearGraphColors
 import com.jaikeerthick.composable_graphs.data.GraphData
 import com.jaikeerthick.composable_graphs.helper.DataInterpolationHelper
 import com.jaikeerthick.composable_graphs.helper.GraphHelper
 import com.jaikeerthick.composable_graphs.style.LineGraphStyle
 import com.jaikeerthick.composable_graphs.style.LinearGraphVisibility
 import com.jaikeerthick.composable_graphs.style.YValueRange
+import com.jaikeerthick.composable_graphs.style.YThreshHoldValueLine
 import kotlin.math.pow
-import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 @Composable
@@ -33,7 +33,8 @@ fun LineGraph(
     style: LineGraphStyle = LineGraphStyle(),
     onPointClicked: (pair: Pair<Any, Any>) -> Unit = {},
     isPointValuesVisible: Boolean = false,
-    yValueRange: YValueRange? = null
+    yValueRange: YValueRange? = null,
+    yThreshHoldValueLine: YThreshHoldValueLine? = null
 ) {
 
     val paddingRight: Dp = if (style.visibility.isYAxisLabelVisible) 20.dp else 0.dp
@@ -173,6 +174,24 @@ fun LineGraph(
                 }
             }
 
+            //draw yAxisThreshhold lines
+
+            if(yThreshHoldValueLine != null &&
+                yValueRange != null &&
+                yThreshHoldValueLine.thresholdValue >= yValueRange.minimumValue &&
+                yThreshHoldValueLine.thresholdValue <= yValueRange.maximumValue
+            ) {
+                val offset = (yThreshHoldValueLine.thresholdValue.toFloat() - yValueRange.minimumValue)
+                val yVal = gridHeight - (yItemSpacing * (offset / yValueRange.yInterval))
+
+                drawLine(
+                    color = yThreshHoldValueLine.lineColor,
+                    start = Offset(0f, yVal),
+                    end = Offset(gridWidth, yVal),
+                    strokeWidth = 5f
+                )
+            }
+
             /**
              * Drawing text labels over the x- axis
              */
@@ -247,13 +266,6 @@ fun LineGraph(
                         )
                     )
 
-                    drawCircle(
-                        color = if(yAxisPoint is DataInterpolationHelper.PlotInfo.Regular)style.colors.pointColor
-                        else Color.Transparent,
-                        radius = 5.dp.toPx(),
-                        center = Offset(x1, y1)
-                    )
-
                     /**
                      * Draws point value above the point
                      */
@@ -272,6 +284,40 @@ fun LineGraph(
                         )
                     }
                 }
+            }
+
+            /**
+             * drawing line connecting all circles/points
+             */
+            drawPoints(
+                points = offsetList.subList(
+                    fromIndex = 0,
+                    toIndex = offsetList.size
+                ),
+                color = style.colors.lineColor,
+                pointMode = PointMode.Polygon,
+                strokeWidth = 2.dp.toPx(),
+            )
+
+            //draw plot points
+            offsetList.forEachIndexed {index, offset ->
+                val yAxisPoint = interpolatedData[index]
+                val pointColor = when(yAxisPoint) {
+                    is DataInterpolationHelper.PlotInfo.Regular -> {
+                        if(yThreshHoldValueLine != null && yAxisPoint.value.toInt() >= yThreshHoldValueLine.thresholdValue) {
+                            style.colors.aboveThreshHoldPointColor
+                        }
+                        else {
+                            style.colors.lowerThreshHoldPointColor
+                        }
+                    }
+                    else -> Color.Transparent
+                }
+                drawCircle(
+                    color = pointColor,
+                    radius = 5.dp.toPx(),
+                    center = offset
+                )
             }
 
 
@@ -304,20 +350,6 @@ fun LineGraph(
                 brush = style.colors.fillGradient ?: Brush.verticalGradient(
                     listOf(Color.Transparent, Color.Transparent)
                 )
-            )
-
-
-            /**
-             * drawing line connecting all circles/points
-             */
-            drawPoints(
-                points = offsetList.subList(
-                    fromIndex = 0,
-                    toIndex = offsetList.size
-                ),
-                color = style.colors.lineColor,
-                pointMode = PointMode.Polygon,
-                strokeWidth = 2.dp.toPx(),
             )
 
             /**
@@ -353,6 +385,10 @@ fun LineGraphPreview() {
         visibility = LinearGraphVisibility(
             isYAxisLabelVisible = true,
             isGridVisible = true
+        ),
+        colors = LinearGraphColors(
+            lowerThreshHoldPointColor = Color.Red,
+            aboveThreshHoldPointColor = Color.Blue
         )
     )
 
@@ -361,9 +397,10 @@ fun LineGraphPreview() {
         xAxisData = listOf("Sun", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat").map {
             GraphData.String(it)
         }, // xAxisData : List<GraphData>, and GraphData accepts both Number and String types
-        yAxisData = listOf(3,6, 9, 12, 15, 18, 21),
+        yAxisData = listOf(3,7, 9, 12, 9, 7, 3),
         style = style,
-        yValueRange = YValueRange(3, 24, 3)
+        yValueRange = YValueRange(3, 24, 3),
+        yThreshHoldValueLine = YThreshHoldValueLine(10, Color.Gray)
     )
 }
 

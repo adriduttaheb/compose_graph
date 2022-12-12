@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     ),
                     colors = LinearGraphColors(
                         lineColor = GraphAccent2,
-                        pointColor = GraphAccent2,
+                        lowerThreshHoldPointColor = GraphAccent2,
                         clickHighlightColor = PointHighlight2,
                         fillGradient = Brush.verticalGradient(
                             listOf(Gradient3, Gradient2)
