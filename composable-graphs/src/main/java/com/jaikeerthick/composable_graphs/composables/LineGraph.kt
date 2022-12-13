@@ -295,7 +295,7 @@ fun LineGraph(
 
                 for(i in 1 until offsetList.size) {
                     val cpXCoordinate = (offsetList[i].x + offsetList[i-1].x) / 2f
-                    val cpOneYCoordinate = offsetList[i-1].y/.98f
+                    val cpOneYCoordinate = offsetList[i-1].y
                     val cpTwoYCoordinate = offsetList[i].y
                     controlPointsOne.add(PointF(cpXCoordinate, cpOneYCoordinate))
                     controlPointsTwo.add(PointF(cpXCoordinate, cpTwoYCoordinate))
@@ -316,7 +316,7 @@ fun LineGraph(
 
                 drawPath(
                     stroke,
-                    color = Color.Black,
+                    color = style.colors.lineColor,
                     style = Stroke(
                         width = 5f,
                         cap = StrokeCap.Round
@@ -340,15 +340,15 @@ fun LineGraph(
             }
 
             //draw plot points
+            val nonEndPointInterpolatedData = interpolatedData.filter { it !is DataInterpolationHelper.PlotInfo.InterpolatedEndPoint}
             offsetList.forEachIndexed {index, offset ->
-                val yAxisPoint = interpolatedData[index]
+                val yAxisPoint = nonEndPointInterpolatedData[index]
                 val pointColor = when(yAxisPoint) {
                     is DataInterpolationHelper.PlotInfo.Regular -> {
-                        if(yThreshHoldValueLine != null && yAxisPoint.value.toInt() >= yThreshHoldValueLine.thresholdValue) {
-                            style.colors.aboveThreshHoldPointColor
-                        }
-                        else {
-                            style.colors.lowerThreshHoldPointColor
+                        when {
+                            yThreshHoldValueLine == null -> style.colors.defaultPointColor
+                            yAxisPoint.value.toInt() >= yThreshHoldValueLine.thresholdValue -> style.colors.aboveThreshHoldPointColor
+                            else -> style.colors.lowerThreshHoldPointColor
                         }
                     }
                     else -> Color.Transparent
@@ -428,9 +428,10 @@ fun LineGraphPreview() {
         ),
         colors = LinearGraphColors(
             lowerThreshHoldPointColor = Color.Red,
-            aboveThreshHoldPointColor = Color.Blue
+            aboveThreshHoldPointColor = Color.Blue,
+            lineColor = Color.Green
         ),
-        bazierCurveEnabled = true
+        bazierCurveEnabled = false
     )
 
 
@@ -438,10 +439,9 @@ fun LineGraphPreview() {
         xAxisData = listOf("Sun", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat").map {
             GraphData.String(it)
         }, // xAxisData : List<GraphData>, and GraphData accepts both Number and String types
-        yAxisData = listOf(3,20, 6, 7, 8, 9, 10),
+        yAxisData = listOf(null,20, 6, null, 8, null, 24),
         style = style,
-        yValueRange = YValueRange(3, 24, 3),
-        yThreshHoldValueLine = YThreshHoldValueLine(10, Color.Gray)
+        yValueRange = YValueRange(3, 24, 3)
     )
 }
 

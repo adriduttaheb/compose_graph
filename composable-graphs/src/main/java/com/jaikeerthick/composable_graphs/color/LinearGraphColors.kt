@@ -8,6 +8,7 @@ data class LinearGraphColors(
     val lineColor: Color = GraphAccent,
     val lowerThreshHoldPointColor: Color = GraphAccent,
     val aboveThreshHoldPointColor: Color = GraphAccent,
+    val defaultPointColor: Color = GraphAccent,
     val clickHighlightColor: Color = PointHighlight,
     val crossHairColor: Color = Color.LightGray,
     /**
