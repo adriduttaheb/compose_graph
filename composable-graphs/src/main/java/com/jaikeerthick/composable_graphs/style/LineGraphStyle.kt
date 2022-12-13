@@ -15,6 +15,7 @@ data class LineGraphStyle(
     val height: Dp = 300.dp,
     val colors: LinearGraphColors = LinearGraphColors(),
     val visibility: LinearGraphVisibility = LinearGraphVisibility(),
+    val bazierCurveEnabled: Boolean = false
     //val yAxisLabelPosition: LabelPosition = LabelPosition.LEFT
 )
 

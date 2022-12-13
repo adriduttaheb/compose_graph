@@ -1,6 +1,7 @@
 package com.jaikeerthick.composable_graphs.composables
 
 import android.graphics.Paint
+import android.graphics.PointF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -9,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -286,18 +288,56 @@ fun LineGraph(
                 }
             }
 
-            /**
-             * drawing line connecting all circles/points
-             */
-            drawPoints(
-                points = offsetList.subList(
-                    fromIndex = 0,
-                    toIndex = offsetList.size
-                ),
-                color = style.colors.lineColor,
-                pointMode = PointMode.Polygon,
-                strokeWidth = 2.dp.toPx(),
-            )
+            if(style.bazierCurveEnabled) {
+                //calculate bazier curve
+                val controlPointsOne = mutableListOf<PointF>()
+                val controlPointsTwo = mutableListOf<PointF>()
+
+                for(i in 1 until offsetList.size) {
+                    val cpXCoordinate = (offsetList[i].x + offsetList[i-1].x) / 2f
+                    val cpOneYCoordinate = offsetList[i-1].y/.98f
+                    val cpTwoYCoordinate = offsetList[i].y
+                    controlPointsOne.add(PointF(cpXCoordinate, cpOneYCoordinate))
+                    controlPointsTwo.add(PointF(cpXCoordinate, cpTwoYCoordinate))
+                }
+
+                //draw bazier curve
+                val stroke = Path().apply {
+                    reset()
+                    moveTo(offsetList.first().x, offsetList.first().y)
+                    for(i in 0 until offsetList.size - 1) {
+                        cubicTo(
+                            controlPointsOne[i].x, controlPointsOne[i].y,
+                            controlPointsTwo[i].x, controlPointsTwo[i].y,
+                            offsetList[i+1].x, offsetList[i+1].y
+                        )
+                    }
+                }
+
+                drawPath(
+                    stroke,
+                    color = Color.Black,
+                    style = Stroke(
+                        width = 5f,
+                        cap = StrokeCap.Round
+                    )
+                )
+            }
+
+            else {
+                /**
+                 * drawing line connecting all circles/points
+                 */
+                drawPoints(
+                    points = offsetList.subList(
+                        fromIndex = 0,
+                        toIndex = offsetList.size
+                    ),
+                    color = style.colors.lineColor,
+                    pointMode = PointMode.Polygon,
+                    strokeWidth = 2.dp.toPx(),
+                )
+            }
 
             //draw plot points
             offsetList.forEachIndexed {index, offset ->
@@ -384,12 +424,13 @@ fun LineGraphPreview() {
     val style = LineGraphStyle(
         visibility = LinearGraphVisibility(
             isYAxisLabelVisible = true,
-            isGridVisible = true
+            isGridVisible = true,
         ),
         colors = LinearGraphColors(
             lowerThreshHoldPointColor = Color.Red,
             aboveThreshHoldPointColor = Color.Blue
-        )
+        ),
+        bazierCurveEnabled = true
     )
 
 
@@ -397,7 +438,7 @@ fun LineGraphPreview() {
         xAxisData = listOf("Sun", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat").map {
             GraphData.String(it)
         }, // xAxisData : List<GraphData>, and GraphData accepts both Number and String types
-        yAxisData = listOf(3,7, 9, 12, 9, 7, 3),
+        yAxisData = listOf(3,20, 6, 7, 8, 9, 10),
         style = style,
         yValueRange = YValueRange(3, 24, 3),
         yThreshHoldValueLine = YThreshHoldValueLine(10, Color.Gray)
