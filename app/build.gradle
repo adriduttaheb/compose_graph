@@ -32,7 +32,8 @@ android {
     buildFeatures {
         compose true
     }
-    composeOptions { kotlinCompilerExtensionVersion = '1.2.0' }
+
+    composeOptions { kotlinCompilerExtensionVersion = Libraries.Versions.AndroidX.COMPOSE_COMPILER }
 }
 
 dependencies {
